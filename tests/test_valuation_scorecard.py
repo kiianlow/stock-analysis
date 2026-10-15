@@ -49,6 +49,16 @@ def test_scenarios_requires_probabilities_to_sum_to_one():
     assert out["upside_downside_ratio"] == pytest.approx(1.0)
 
 
+def test_cyclical_value_and_implied_eps():
+    out = v.cyclical([100.0], norm_eps=10.0, multiple=10.0, discount=0.10, net_cash_per_share=5.0)
+    assert out["pv_boom_fcf"] == pytest.approx(100 / 1.1)
+    assert out["pv_franchise"] == pytest.approx(100 / 1.1)
+    assert out["value_per_share"] == pytest.approx(200 / 1.1 + 5)
+    implied = v.implied_normalised_eps(out["value_per_share"], [100.0], 10.0, 0.10, 5.0)
+    assert implied == pytest.approx(10.0)
+    assert v.normalised_eps(100.0, 0.25, 0.2, 10.0) == pytest.approx(2.0)
+
+
 def test_wacc():
     assert v.capm(0.05, 1.2, 0.05) == pytest.approx(0.11)
     assert v.wacc(80, 20, 0.11, 0.06, 0.25) == pytest.approx(0.8 * 0.11 + 0.2 * 0.06 * 0.75)

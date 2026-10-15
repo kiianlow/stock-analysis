@@ -79,6 +79,12 @@ Plan on 2 to keep a buffer for retries.
   future-dated rows and filings by fund entities. The script handles all three.
 - Statements have no stock-based compensation and no diluted shares. Get both from the 10-K or 10-Q.
 - GLOBAL_QUOTE and daily data are end of day. Check the live quote in IBKR before any order.
+- Quarterly cash flow lines sometimes repeat the previous quarter exactly (seen in MU capex twice). The script flags repeats and
+  quarters that do not sum to the annual figure. Use annual figures and confirm in the release.
+- cashAndShortTermInvestments can equal cash alone and never includes long-term marketable investments. MU's net cash was
+  understated by $35B. Take cash and investments from the 10-K or earnings release.
+- Fiscal year labels use month ends (MU's year ended 3 Sep 2026 shows as 2026-08-31).
+- Operating income can differ slightly from the company's GAAP figure (MU FY26: $99.91B feed vs $99.34B release). Quote the release.
 
 ## SGX coverage
 

@@ -355,7 +355,10 @@ def beneish(df):
         tata = 0.0
     m = (-4.84 + 0.920 * dsri + 0.528 * gmi + 0.404 * aqi + 0.892 * sgi + 0.115 * depi
          - 0.172 * sgai + 4.679 * tata - 0.327 * lvgi)
+    m_growth_neutral = m - 0.892 * sgi + 0.892
     return {"m": m, "flag": bool(m > -1.78), "strict_flag": bool(m > -2.22),
+            "m_growth_neutral": m_growth_neutral,
+            "flag_growth_neutral": bool(m_growth_neutral > -1.78),
             "components": {"DSRI": dsri, "GMI": gmi, "AQI": aqi, "SGI": sgi, "DEPI": depi,
                            "SGAI": sgai, "LVGI": lvgi, "TATA": tata}, "notes": notes}
 
@@ -378,6 +381,32 @@ def quarterly_growth(q):
                     "gross_margin": div(q.loc[date, "gross_profit"], q.loc[date, "revenue"]),
                     "operating_margin": div(q.loc[date, "operating_income"], q.loc[date, "revenue"])})
     return out
+
+
+def check_quarterly(q, annual, flags):
+    """Catch feed errors: repeated quarterly values and quarters that do not add up to the annual figure."""
+    if q.empty:
+        return
+    q = q.sort_index()
+    for key in ("revenue", "operating_income", "net_income", "cfo", "capex"):
+        s = q[key].dropna()
+        for i in range(1, len(s)):
+            if s.iloc[i] != 0 and s.iloc[i] == s.iloc[i - 1]:
+                flags.append(f"Quarterly {key} repeats exactly ({s.iloc[i]:,.0f}) at {s.index[i - 1].date()} and "
+                             f"{s.index[i].date()}. Likely a feed error. Prefer annual figures and check the 10-Q.")
+    if annual is None or annual.empty or len(q) < 4:
+        return
+    end = q.index[-1]
+    match = annual.loc[(annual.index >= end - pd.Timedelta(days=10)) & (annual.index <= end + pd.Timedelta(days=10))]
+    if match.empty:
+        return
+    a = match.iloc[-1]
+    last4 = q.iloc[-4:]
+    for key in ("revenue", "net_income", "cfo", "capex"):
+        total, yearly = num(last4[key].sum()), num(a[key])
+        if not (math.isnan(total) or math.isnan(yearly)) and yearly and abs(total - yearly) / abs(yearly) > 0.01:
+            flags.append(f"Last four quarters of {key} sum to {total:,.0f} but the annual report says {yearly:,.0f}. "
+                         "Annual figures are used for the year. Treat TTM numbers built from quarters with care.")
 
 
 def ttm(q):
@@ -439,6 +468,7 @@ def analyse(annual, quarterly, overview=None, price=None, market_cap=None):
     flags = []
     annual = annual.dropna(subset=["revenue"]).iloc[-5:]
     validate(annual, flags, "annual")
+    check_quarterly(quarterly, annual, flags)
     rows = yearly_metrics(annual, flags)
     overview = overview or {}
     sector = f"{overview.get('Sector') or ''} {overview.get('Industry') or ''}".upper()
@@ -522,7 +552,10 @@ def summary_markdown(r):
     lines.append(f"Piotroski F {pio.get('score')}/{pio.get('out_of')}")
     ben = r.get("beneish", {})
     if ben.get("m") is not None:
-        lines.append(f"Beneish M {ben['m']} (flag above -1.78: {ben['flag']})")
+        lines.append(f"Beneish M {ben['m']} (flag above -1.78: {ben['flag']}), growth-neutral M {ben['m_growth_neutral']} "
+                     f"(flag: {ben['flag_growth_neutral']})")
+        if ben["notes"]:
+            lines.append(f"- Beneish inputs defaulted: {'; '.join(ben['notes'])}")
     vs = r.get("valuation_snapshot")
     if vs:
         lines.append(f"Valuation (TTM to {vs['ttm_period_end']}): market cap {vs['market_cap'] / 1e9:.1f}B, "

@@ -100,6 +100,31 @@ def scenarios(price, cases):
     return out
 
 
+def normalised_eps(mid_revenue, mid_op_margin, tax, shares):
+    """Mid-cycle earnings per share for cyclicals (framework 8.8)."""
+    return mid_revenue * mid_op_margin * (1 - tax) / shares
+
+
+def cyclical(boom_fcf_per_share, norm_eps, multiple, discount, net_cash_per_share=0.0):
+    """Value a cyclical as: discounted boom-year FCF + discounted mid-cycle franchise value + net cash.
+    boom_fcf_per_share: FCF per share for each year before earnings normalise (year 1, 2, ...).
+    The franchise value (norm_eps x multiple) is reached at the end of the last boom year."""
+    n = len(boom_fcf_per_share)
+    pv_boom = [f / (1 + discount) ** (t + 1) for t, f in enumerate(boom_fcf_per_share)]
+    franchise = norm_eps * multiple
+    pv_franchise = franchise / (1 + discount) ** n
+    return {"pv_boom_fcf": sum(pv_boom), "boom_detail": pv_boom, "franchise_value": franchise,
+            "pv_franchise": pv_franchise, "net_cash": net_cash_per_share,
+            "value_per_share": sum(pv_boom) + pv_franchise + net_cash_per_share}
+
+
+def implied_normalised_eps(price, boom_fcf_per_share, multiple, discount, net_cash_per_share=0.0):
+    """Mid-cycle EPS the current price needs, given the boom-year cash and exit multiple."""
+    n = len(boom_fcf_per_share)
+    pv_boom = sum(f / (1 + discount) ** (t + 1) for t, f in enumerate(boom_fcf_per_share))
+    return (price - net_cash_per_share - pv_boom) * (1 + discount) ** n / multiple
+
+
 def csp(strike, premium, dte):
     return {"breakeven": strike - premium,
             "annualised_yield": premium / strike * 365 / dte,
@@ -149,6 +174,17 @@ def main():
         c.add_argument(f"--{name}", type=float, required=True)
     c.add_argument("--dte", type=int, required=True)
 
+    cy = sub.add_parser("cyclical", help="boom cash + mid-cycle franchise value + net cash")
+    cy.add_argument("--boom-fcf", required=True, help="comma-separated FCF per share by year, e.g. 130,52")
+    cy.add_argument("--mid-revenue", type=float, required=True)
+    cy.add_argument("--mid-margin", type=float, required=True)
+    cy.add_argument("--tax", type=float, required=True)
+    cy.add_argument("--shares", type=float, required=True)
+    cy.add_argument("--multiple", type=float, required=True)
+    cy.add_argument("--discount", type=float, required=True)
+    cy.add_argument("--net-cash", type=float, default=0.0, help="net cash per share")
+    cy.add_argument("--price", type=float, help="also solve the mid-cycle EPS this price implies")
+
     w = sub.add_parser("wacc")
     for name in ("rf", "beta", "erp", "equity-value", "debt-value", "cost-debt", "tax"):
         w.add_argument(f"--{name}", type=float, required=True)
@@ -165,6 +201,12 @@ def main():
         out = scenarios(a.price, cases)
     elif a.cmd == "csp":
         out = csp(a.strike, a.premium, a.dte)
+    elif a.cmd == "cyclical":
+        boom = [float(x) for x in a.boom_fcf.split(",")]
+        eps = normalised_eps(a.mid_revenue, a.mid_margin, a.tax, a.shares)
+        out = {"normalised_eps": eps, **cyclical(boom, eps, a.multiple, a.discount, a.net_cash)}
+        if a.price:
+            out["implied_normalised_eps_at_price"] = implied_normalised_eps(a.price, boom, a.multiple, a.discount, a.net_cash)
     else:
         re_ = capm(a.rf, a.beta, a.erp)
         out = {"cost_of_equity": re_, "wacc": wacc(a.equity_value, a.debt_value, re_, a.cost_debt, a.tax)}

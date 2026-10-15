@@ -1,1 +1,2 @@
 date,ticker,price,price_date,weighted_score,raw_rating,final_rating,overrides,fair_value_bear,fair_value_base,fair_value_bull,s1_zone,entry_method,suggested_strike,thesis_break_price,next_review,report_file
+2026-10-15,MU,914.13,2026-10-14,2.93,Hold,Hold,"valuation 1 and below hurdle both cap at Hold",266,516,906,879.00-902.60,none,,845 weekly close,2026-12-16,analyses/2026-10-15-MU.md

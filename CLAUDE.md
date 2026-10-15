@@ -60,8 +60,12 @@ Then check, before using any number:
 - `data_checks` in summary.json: no OHLC violations, no daily vs weekly mismatches. A mismatch means
   daily.csv was copied wrong. Re-save it and rerun.
 - Read every flag. Each flag needs an explanation in the report, found in filings or news.
+- Beneish: the kill switch uses the growth-neutral score (`m_growth_neutral`). A raw score above -1.78 caused by sales growth is explained, not disqualifying.
+- Feed errors flagged by the script (repeated quarterly values, quarters that do not sum to the annual figure): use annual figures and confirm in the 10-K or earnings release.
 - If estimates flag a large EPS change between fiscal years, find the cause (one-off gains, charges)
   and value the company on core earnings, not the distorted figure.
+- Net cash: the feed counts only cash and short-term investments. Add long-term marketable investments from the
+  latest 10-K or release when the company holds them.
 
 ## 4. Research the judgment gates (web search, cite every source)
 
@@ -98,7 +102,9 @@ Primary sources first: 10-K, 10-Q, 8-K and DEF 14A on SEC EDGAR (WebFetch), then
 - Expected annual return (Gate 8.4): `python3 scripts/valuation.py expected ...`.
 - Hurdle (convention for this repo): required return = US 10-year yield + 5 points
   (3-point equity premium plus 2-point single-stock margin). Below it means `--below-hurdle` in step 7.
-- Cyclicals: use normalised earnings (framework 8.8).
+- Cyclicals (memory, semis, energy, materials, autos, shipping): use normalised earnings (framework 8.8) with
+  `python3 scripts/valuation.py cyclical --boom-fcf 130,60 --mid-revenue 120e9 --mid-margin 0.28 --tax 0.15 --shares 1.147e9 --multiple 15 --discount 0.127 --net-cash 59.55 --price 914.13`.
+  Run bull, base and bear. Check through-cycle margins from at least 10 years of annual statements. Report the mid-cycle EPS the price implies.
 
 ## 7. Score
 

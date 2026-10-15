@@ -46,7 +46,7 @@ Any one of these means stop. Do not score the company.
 | Restatement of prior financials in the last 3 years beyond trivial items | 8-K Item 4.02, 10-K/A |
 | Late filing notices (NT 10-K, NT 10-Q) | SEC EDGAR |
 | Active accounting investigation by a regulator, or credible fraud allegations the company has not rebutted with evidence | News, 10-K legal proceedings, short-seller reports |
-| Beneish M-score above -1.78 (see Gate 6) | Calculate |
+| Beneish M-score above -1.78 with sales growth neutralised (SGI set to 1). A raw score above -1.78 driven only by growth is a flag to explain, not a kill switch (see Gate 6) | Calculate (fundamentals.py reports both) |
 | Altman Z-score in the distress zone AND negative free cash flow (non-financial companies only) | Calculate (Gate 5) |
 | Loss-making with under 12 months of cash runway and no committed funding | Cash flow statement, liquidity section of MD&A |
 | You cannot explain in two sentences how the company makes money and why customers choose it | Your own notes |
@@ -327,7 +327,7 @@ M = -4.84 + 0.920 DSRI + 0.528 GMI + 0.404 AQI + 0.892 SGI + 0.115 DEPI - 0.172 
 | LVGI | [(Current liabilities + long-term debt) / Total assets] this year ÷ same ratio last year |
 | TATA | (Income from continuing operations - cash from operations) / total assets |
 
-Above -1.78 flags a likely manipulator in the 8-variable model. Some analysts use -2.22 as a stricter cutoff. It is a screen, not proof. A fast-growing honest company can score high on SGI alone.
+Above -1.78 flags a likely manipulator in the 8-variable model. Some analysts use -2.22 as a stricter cutoff. It is a screen, not proof. A fast-growing honest company can score high on SGI alone, so the kill switch uses the growth-neutral score: recompute M with SGI set to 1. If that stays above -1.78, stop. If only the raw score is above the line, explain it in the report and check accruals (TATA) and receivables (DSRI) by hand.
 
 ---
 
@@ -900,7 +900,7 @@ Is it a good business getting stronger?
 - [ ] Balance sheet passes (net debt/EBITDA, coverage, maturities)
 - [ ] Altman Z and Piotroski F-score acceptable
 - [ ] Operating cash flow at or above net income over time
-- [ ] Beneish M-score below -1.78
+- [ ] Beneish M-score below -1.78 (growth-neutral)
 - [ ] Management capital allocation record is good
 - [ ] Insiders aligned
 

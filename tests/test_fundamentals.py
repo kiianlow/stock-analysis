@@ -105,6 +105,30 @@ def test_alpha_vantage_statement_parsing(tmp_path):
     assert quarterly.empty
 
 
+def test_beneish_growth_neutral_removes_sales_growth_effect():
+    df = frame([year(cfo=150.0), year(cfo=150.0, revenue=3000.0, cogs=1200.0, gross_profit=1800.0,
+                                      receivables=300.0, sga=450.0)])
+    out = f.beneish(df)
+    assert out["components"]["SGI"] == pytest.approx(3.0)
+    assert out["flag"] is True
+    assert out["m_growth_neutral"] == pytest.approx(out["m"] - 0.892 * 3.0 + 0.892)
+    assert out["flag_growth_neutral"] is False
+
+
+def test_quarterly_feed_checks():
+    q_idx = pd.to_datetime(["2025-11-30", "2026-02-28", "2026-05-31", "2026-08-31"])
+    q = pd.DataFrame({k: [np.nan] * 4 for k in f.CANONICAL}, index=q_idx, dtype=float)
+    q["revenue"] = [10.0, 20.0, 30.0, 40.0]
+    q["capex"] = [5.0, 5.0, 7.0, 17.0]          # repeated value, and sums to 34 not 30
+    annual = pd.DataFrame({k: [np.nan] for k in f.CANONICAL}, index=pd.to_datetime(["2026-08-31"]), dtype=float)
+    annual["revenue"], annual["capex"] = 100.0, 30.0
+    flags = []
+    f.check_quarterly(q, annual, flags)
+    assert any("repeats exactly" in x and "capex" in x for x in flags)
+    assert any("Last four quarters of capex" in x for x in flags)
+    assert not any("of revenue" in x for x in flags)
+
+
 def test_validation_flags_unbalanced_sheet():
     flags = []
     f.validate(frame([year(total_liabilities=500.0)]), flags)
