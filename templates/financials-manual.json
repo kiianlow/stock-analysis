@@ -1,0 +1,30 @@
+{
+  "_notes": [
+    "Manual input for companies Alpha Vantage does not cover (SGX stocks and S-REITs).",
+    "Copy to data/<TICKER>/<DATE>/manual.json. Keys under years and quarters are period-end dates.",
+    "Use the reporting currency. Leave out any field you cannot source. Do not guess.",
+    "capex, dividends and buybacks are positive numbers (cash paid).",
+    "total_debt includes lease liabilities if the company reports them as borrowings. Say which in the report.",
+    "Delete this _notes block or leave it, the script ignores it."
+  ],
+  "ticker": "D05.SI",
+  "company": "Example Company Ltd",
+  "currency": "SGD",
+  "sector": "Financial Services",
+  "industry": "Banks",
+  "price": null,
+  "market_cap": null,
+  "years": {
+    "2025-12-31": {
+      "revenue": null, "cogs": null, "gross_profit": null, "operating_income": null, "ebit": null,
+      "sga": null, "net_income": null, "net_income_cont": null, "interest_expense": null,
+      "pretax_income": null, "income_tax": null, "da": null,
+      "total_assets": null, "current_assets": null, "current_liabilities": null,
+      "total_liabilities": null, "equity": null, "retained_earnings": null, "cash_sti": null,
+      "receivables": null, "inventory": null, "payables": null, "ppe_net": null, "goodwill": null,
+      "intangibles": null, "lt_investments": null, "total_debt": null, "long_term_debt": null,
+      "shares": null, "cfo": null, "capex": null, "dividends": null, "buybacks": null
+    }
+  },
+  "quarters": {}
+}
